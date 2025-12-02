@@ -16,6 +16,7 @@ try:
     from pdf2image import convert_from_path
     from PIL import Image
     import img2pdf
+    from tqdm import tqdm
 except ImportError:
     print("Error: Required packages not installed. Run: pip install -r requirements.txt")
     sys.exit(1)
@@ -98,7 +99,7 @@ def compress_pdf(
     try:
         # Convert PDF to images
         if verbose:
-            print(f"Converting PDF to images at {dpi} DPI...")
+            tqdm.write(f"Converting PDF to images at {dpi} DPI...")
         images = convert_from_path(input_path, dpi=dpi)
         
         if not images:
@@ -106,15 +107,22 @@ def compress_pdf(
                 print("Error: Could not extract images from PDF")
             return False
         
-        if verbose:
-            print(f"Processing {len(images)} pages...")
-        
         # Compress images
         compressed_images = []
         temp_dir = tempfile.mkdtemp()
         
         try:
-            for i, image in enumerate(images):
+            # Create progress bar
+            progress_bar = tqdm(
+                enumerate(images),
+                total=len(images),
+                desc="Compressing pages",
+                unit="page",
+                disable=not verbose,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
+            )
+            
+            for i, image in progress_bar:
                 # Convert to RGB if necessary (for JPEG compatibility)
                 if image.mode != 'RGB':
                     image = image.convert('RGB')
@@ -144,7 +152,7 @@ def compress_pdf(
             
             # Convert images back to PDF
             if verbose:
-                print("Converting images back to PDF...")
+                tqdm.write("Converting images back to PDF...")
             with open(output_path, 'wb') as f:
                 f.write(img2pdf.convert(compressed_images))
             
@@ -186,7 +194,7 @@ def create_searchable_pdf(
     
     try:
         if verbose:
-            print(f"Converting PDF to images at {dpi} DPI for OCR...")
+            tqdm.write(f"Converting PDF to images at {dpi} DPI for OCR...")
         images = convert_from_path(input_path, dpi=dpi)
         
         if not images:
@@ -194,18 +202,23 @@ def create_searchable_pdf(
                 print("Error: Could not extract images from PDF")
             return False
         
-        if verbose:
-            print(f"Processing {len(images)} pages with OCR...")
-        
         temp_dir = tempfile.mkdtemp()
         
         try:
             # Create PDF with editable text using reportlab
             c = canvas.Canvas(output_path)
             
-            for i, image in enumerate(images):
-                if verbose:
-                    print(f"  OCRing page {i + 1}/{len(images)}...", end="\r", flush=True)
+            # Create progress bar
+            progress_bar = tqdm(
+                enumerate(images),
+                total=len(images),
+                desc="OCR processing",
+                unit="page",
+                disable=not verbose,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
+            )
+            
+            for i, image in progress_bar:
                 
                 # Convert to RGB if necessary
                 if image.mode != 'RGB':
@@ -291,7 +304,7 @@ def create_searchable_pdf(
             c.save()
             
             if verbose:
-                print(f"\nOCR completed successfully! PDF is now editable.")
+                tqdm.write("✓ OCR completed successfully! PDF is now editable.")
             
             return True
             
@@ -341,8 +354,8 @@ def compress_pdf_with_ocr(
         
         if verbose:
             if dpi < 200:
-                print(f"Warning: Using low DPI ({dpi}) may reduce OCR accuracy")
-            print(f"Converting PDF to images at {ocr_dpi} DPI for compression and OCR...")
+                tqdm.write(f"⚠ Warning: Using low DPI ({dpi}) may reduce OCR accuracy")
+            tqdm.write(f"Converting PDF to images at {ocr_dpi} DPI for compression and OCR...")
         images = convert_from_path(input_path, dpi=ocr_dpi)
         
         if not images:
@@ -350,18 +363,23 @@ def compress_pdf_with_ocr(
                 print("Error: Could not extract images from PDF")
             return False
         
-        if verbose:
-            print(f"Processing {len(images)} pages with compression and OCR...")
-        
         temp_dir = tempfile.mkdtemp()
         
         try:
             # Create PDF with compressed images and editable text using reportlab
             c = canvas.Canvas(output_path)
             
-            for i, image in enumerate(images):
-                if verbose:
-                    print(f"  Processing page {i + 1}/{len(images)}...", end="\r", flush=True)
+            # Create progress bar
+            progress_bar = tqdm(
+                enumerate(images),
+                total=len(images),
+                desc="Compressing & OCR",
+                unit="page",
+                disable=not verbose,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
+            )
+            
+            for i, image in progress_bar:
                 
                 # Convert to RGB if necessary
                 if image.mode != 'RGB':
@@ -451,7 +469,7 @@ def compress_pdf_with_ocr(
             c.save()
             
             if verbose:
-                print(f"\nCompression and OCR completed successfully! PDF is now compressed and editable.")
+                tqdm.write("✓ Compression and OCR completed successfully! PDF is now compressed and editable.")
             
             return True
             
@@ -516,8 +534,17 @@ def find_optimal_compression(
     # Use appropriate compression function based on OCR setting
     test_compress_func = compress_pdf_with_ocr if enable_ocr else compress_pdf
     
-    for dpi_idx, dpi in enumerate(dpi_options):
-        print(f"  Testing DPI={dpi} ({dpi_idx + 1}/{len(dpi_options)})...", end=" ", flush=True)
+    # Create progress bar for DPI testing
+    dpi_progress = tqdm(
+        enumerate(dpi_options),
+        total=len(dpi_options),
+        desc="Testing DPIs",
+        unit="DPI",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+    )
+    
+    for dpi_idx, dpi in dpi_progress:
+        dpi_progress.set_postfix({"DPI": dpi, "Status": "Testing..."})
         
         temp_output = output_path + ".tmp"
         if test_compress_func(input_path, temp_output, target_size, test_quality, dpi, verbose=False):
@@ -529,18 +556,19 @@ def find_optimal_compression(
                     best_dpi = dpi
                     best_dpi_quality = test_quality
                     best_dpi_size = test_size
-                    print(f"✓ Can reach target (size: {format_size(test_size)})")
+                    dpi_progress.set_postfix({"DPI": dpi, "Status": f"✓ Target reached ({format_size(test_size)})"})
                 else:
-                    print(f"✓ Can reach target, but higher DPI already found")
+                    dpi_progress.set_postfix({"DPI": dpi, "Status": "✓ Target reached (higher DPI found)"})
             else:
-                print(f"✗ Too large ({format_size(test_size)})")
+                dpi_progress.set_postfix({"DPI": dpi, "Status": f"✗ Too large ({format_size(test_size)})"})
             
             # Clean up
             if os.path.exists(temp_output):
                 os.remove(temp_output)
         else:
-            print("✗ Compression failed")
+            dpi_progress.set_postfix({"DPI": dpi, "Status": "✗ Failed"})
     
+    dpi_progress.close()
     print()
     
     # Phase 2: Detailed binary search on the best DPI found
@@ -560,9 +588,20 @@ def find_optimal_compression(
         iterations = 0
         max_iterations = 15  # Prevent infinite loops
         
+        # Create progress bar for quality optimization
+        quality_progress = tqdm(
+            total=max_iterations,
+            desc="Optimizing quality",
+            unit="iter",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+        )
+        
         while low <= high and iterations < max_iterations:
             iterations += 1
             mid_quality = (low + high) // 2
+            
+            quality_progress.set_postfix({"Quality": mid_quality, "Range": f"{low}-{high}"})
+            quality_progress.update(1)
             
             # Create temporary output file
             temp_output = output_path + ".tmp"
@@ -576,16 +615,21 @@ def find_optimal_compression(
                     best_quality = mid_quality
                     best_size = temp_size
                     low = mid_quality + 1  # Try higher quality
+                    quality_progress.set_postfix({"Quality": mid_quality, "Status": f"✓ OK ({format_size(temp_size)})"})
                 else:
                     # File is too large, need lower quality
                     high = mid_quality - 1
+                    quality_progress.set_postfix({"Quality": mid_quality, "Status": f"✗ Too large ({format_size(temp_size)})"})
             else:
                 # Compression failed, try lower quality
                 high = mid_quality - 1
+                quality_progress.set_postfix({"Quality": mid_quality, "Status": "✗ Failed"})
             
             # Clean up temp file
             if os.path.exists(temp_output):
                 os.remove(temp_output)
+        
+        quality_progress.close()
         
         if best_quality is not None:
             best_solution = (best_dpi, best_quality, best_size)
