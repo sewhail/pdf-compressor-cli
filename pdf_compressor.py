@@ -820,8 +820,21 @@ Examples:
         print("  Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki")
         sys.exit(1)
     
-    # Compress PDF
-    if target_size:
+    # Determine if user is requesting OCR-only (no compression)
+    # OCR-only: --ocr flag without -s and using default quality/dpi
+    ocr_only = args.ocr and not target_size and args.quality == 85 and args.dpi == 200
+    
+    # Process PDF
+    if ocr_only:
+        # OCR-only mode: just add searchable text, no compression
+        print("Adding OCR to make PDF searchable (no compression)...")
+        original_size = get_file_size(args.input)
+        success = create_searchable_pdf(args.input, args.output, dpi=300, verbose=True)
+        if success:
+            final_size = get_file_size(args.output)
+            print(f"Original size: {format_size(original_size)}")
+            print(f"Output size: {format_size(final_size)}")
+    elif target_size:
         success = find_optimal_compression(args.input, args.output, target_size, enable_ocr=args.ocr)
     else:
         if args.ocr:
