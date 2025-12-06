@@ -21,7 +21,7 @@ setup(
     python_requires=">=3.7",
     entry_points={
         "console_scripts": [
-            "pdf-compressor=pdf_compressor:main",
+            "pdfedit=pdf_compressor:main",
         ],
     },
     classifiers=[

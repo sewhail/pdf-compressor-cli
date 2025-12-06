@@ -15,20 +15,28 @@ A simple command-line tool to compress PDF files to a target size with minimal q
 
 1. Install Python 3.7 or higher
 
-2. Install dependencies:
+2. Clone or download this repository
+
+3. Install the CLI utility:
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
-3. Install poppler (required for pdf2image):
+This will install all dependencies and create the `pdfedit` command that you can use from anywhere.
+
+4. Install poppler (required for pdf2image):
    - **macOS**: `brew install poppler`
    - **Linux**: `sudo apt-get install poppler-utils` (Debian/Ubuntu) or `sudo yum install poppler-utils` (RHEL/CentOS)
    - **Windows**: Download from [poppler-windows](https://github.com/oschwartz10612/poppler-windows/releases) and add to PATH
 
-4. (Optional) Install Tesseract OCR (required for `--ocr` feature):
+5. (Optional) Install Tesseract OCR (required for `--ocr` feature):
    - **macOS**: `brew install tesseract`
    - **Linux**: `sudo apt-get install tesseract-ocr` (Debian/Ubuntu) or `sudo yum install tesseract` (RHEL/CentOS)
    - **Windows**: Download from [Tesseract at UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) and add to PATH
+
+> **Note**: If you get a "command not found" error when running `pdfedit`, you may need to add Python's bin directory to your PATH. 
+> - On macOS/Linux, add this to your `~/.zshrc` or `~/.bashrc`: `export PATH="$HOME/Library/Python/3.9/bin:$PATH"` (adjust Python version as needed)
+> - Or run the command with the full path: `~/Library/Python/3.9/bin/pdfedit`
 
 ## Usage
 
@@ -37,11 +45,11 @@ pip install -r requirements.txt
 Compress a PDF to a specific size (recommended):
 
 ```bash
-python pdf_compressor.py input.pdf -o output.pdf -s 5MB
+pdfedit input.pdf -o output.pdf -s 5MB
 ```
 
 ```bash
-python pdf_compressor.py input.pdf -o output.pdf -s 500KB
+pdfedit input.pdf -o output.pdf -s 500KB
 ```
 
 The tool will automatically find the optimal compression settings to reach the target size.
@@ -51,7 +59,7 @@ The tool will automatically find the optimal compression settings to reach the t
 Compress with specific quality settings (no target size):
 
 ```bash
-python pdf_compressor.py input.pdf -o output.pdf -q 80 -d 200
+pdfedit input.pdf -o output.pdf -q 80 -d 200
 ```
 
 - `-q, --quality`: JPEG quality (1-100, higher = better quality). Default: 85
@@ -63,10 +71,10 @@ Add OCR to make scanned PDFs searchable and editable (can be combined with compr
 
 ```bash
 # Compress and add OCR
-python pdf_compressor.py scanned.pdf -o editable.pdf -s 5MB --ocr
+pdfedit scanned.pdf -o editable.pdf -s 5MB --ocr
 
 # Just add OCR without compression
-python pdf_compressor.py scanned.pdf -o editable.pdf --ocr
+pdfedit scanned.pdf -o editable.pdf --ocr
 ```
 
 The `--ocr` flag uses Tesseract OCR to extract text from scanned PDFs and creates an editable PDF. The text can be selected, copied, searched, and edited in PDF editors like Adobe Acrobat.
@@ -84,22 +92,22 @@ The `--ocr` flag uses Tesseract OCR to extract text from scanned PDFs and create
 
 ```bash
 # Compress to 5MB
-python pdf_compressor.py document.pdf -o compressed.pdf -s 5MB
+pdfedit document.pdf -o compressed.pdf -s 5MB
 
 # Compress to 500KB
-python pdf_compressor.py document.pdf -o compressed.pdf -s 500KB
+pdfedit document.pdf -o compressed.pdf -s 500KB
 
 # Compress with specific quality
-python pdf_compressor.py document.pdf -o compressed.pdf -q 75
+pdfedit document.pdf -o compressed.pdf -q 75
 
 # Compress with lower DPI for smaller file
-python pdf_compressor.py document.pdf -o compressed.pdf -q 80 -d 150
+pdfedit document.pdf -o compressed.pdf -q 80 -d 150
 
 # Compress to target size with OCR
-python pdf_compressor.py scanned.pdf -o searchable.pdf -s 5MB --ocr
+pdfedit scanned.pdf -o searchable.pdf -s 5MB --ocr
 
 # Add OCR to scanned PDF (no compression) - makes it editable
-python pdf_compressor.py scanned.pdf -o editable.pdf --ocr
+pdfedit scanned.pdf -o editable.pdf --ocr
 ```
 
 ## How It Works

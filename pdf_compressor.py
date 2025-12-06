@@ -732,16 +732,16 @@ def main():
         epilog="""
 Examples:
   # Compress to 5MB
-  python pdf_compressor.py input.pdf -o output.pdf -s 5MB
+  pdfedit input.pdf -o output.pdf -s 5MB
   
   # Compress to 500KB with OCR
-  python pdf_compressor.py input.pdf -o output.pdf -s 500KB --ocr
+  pdfedit input.pdf -o output.pdf -s 500KB --ocr
   
   # Compress with specific quality (no target size)
-  python pdf_compressor.py input.pdf -o output.pdf -q 80
+  pdfedit input.pdf -o output.pdf -q 80
   
   # Add OCR to make scanned PDF searchable
-  python pdf_compressor.py scanned.pdf -o searchable.pdf --ocr
+  pdfedit scanned.pdf -o searchable.pdf --ocr
         """
     )
     
