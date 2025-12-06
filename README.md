@@ -1,4 +1,4 @@
-# PDF Compressor CLI
+# pdfedit - PDF Editor CLI
 
 A simple command-line tool to compress PDF files to a target size with minimal quality loss.
 
